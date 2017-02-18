@@ -26,34 +26,34 @@
   }
 }(this, function (utils) {
   return function () { //factory
-    return function (config, enqueue) {
-      if (typeof config === 'function') {
-        var _config = enqueue
-        enqueue = config
-        config = _config
+    return function (options, enqueue) {
+      if (typeof options === 'function') {
+        var _options = enqueue
+        enqueue = options
+        options = _options
       }
       if (typeof enqueue !== 'function') {
         throw new Error('Excepted the enqueue to be a function.')
       }
-      config = utils.normalizeConfig(config)
+      options = utils.normalizeConfig(options)
 
       var buffer = [], enqueuing = {}, enqueuedCount = 0
       var finalEnqueue = function (value) {
-        if (config.will.call(null, value) === false) {
-          return config.rejected.call(null, value, 'will hook')
+        if (options.will.call(null, value) === false) {
+          return options.rejected.call(null, value, 'will hook')
         }
         enqueue.call(null, value)
-        if (++enqueuedCount > config.limit) {
+        if (++enqueuedCount > options.limit) {
           enqueuedCount--
-          config.dequeue.call(null)
+          options.dequeue.call(null)
         }
-        config.did.call(null, value)
+        options.did.call(null, value)
       }
 
       return function (value) { //lazily enqueue
         buffer.push([utils.createId(), value])
-        if (buffer.length > config.limit) {
-          buffer = config.limit ? buffer.slice(-config.limit) : []
+        if (buffer.length > options.limit) {
+          buffer = options.limit ? buffer.slice(-options.limit) : []
         }
         var len = buffer.length, delay = 0, i = 0
 
@@ -64,20 +64,20 @@
             continue
           }
 
-          var delayInc = utils.generateDelay(config.delay, value)
+          var delayInc = utils.generateDelay(options.delay, value)
           if (delayInc === Infinity) {
-            config.rejected.call(null, value, 'infinity delay')
+            options.rejected.call(null, value, 'infinity delay')
             continue
           }
           delay += delayInc
 
+          enqueuing[id] = true
           setTimeout(function () {
-            enqueuing[id] = true
             var indexInBuffer = utils.findIndex(buffer, function (item) {
               return item[0] === id
             })
             if (indexInBuffer === -1) {
-              return config.rejected.call(null, value, 'overflow')
+              return options.rejected.call(null, value, 'overflow')
             }
             buffer.splice(indexInBuffer, 1)
             delete enqueuing[id]
@@ -128,27 +128,27 @@
     return isValidNumber(delay) ? delay : 0
   }
 
-  var normalizeConfig = function (config) {
-    if (!config || typeof config !== 'object') {
-      config = {}
+  var normalizeConfig = function (options) {
+    if (!options || typeof options !== 'object') {
+      options = {}
     }
-    config.delay = config.delay || 0
-    config.will = config.will || noop
-    config.did = config.did || noop
-    config.rejected = config.rejected || noop
-    config.limit = isValidNumber(config.limit) ? config.limit : Infinity
-    config.dequeue = config.dequeue || void 0
-    if (!isValidNumber(config.delay) || typeof config.delay !== 'function') {
-      throw new Error('Excepted the `delay` to be a number or function.')
+    options.delay = options.delay || 0
+    options.will = options.will || noop
+    options.did = options.did || noop
+    options.rejected = options.rejected || noop
+    options.limit = isValidNumber(options.limit) ? options.limit : Infinity
+    options.dequeue = options.dequeue || void 0
+    if (!isValidNumber(options.delay) || typeof options.delay !== 'function') {
+      throw new Error('Excepted the delay option to be a number or function.')
     }
-    if (config.limit < 0) {
-      throw new Error('Excepted the `limit` greater than or equal to zero.')
+    if (options.limit < 0) {
+      throw new Error('Excepted the limit option greater than or equal to zero.')
     }
-    if (config.limit < Infinity && typeof config.dequeue !== 'function') {
-      throw new Error('Excepted the `dequeue` to be a function.')
+    if (options.limit < Infinity && typeof options.dequeue !== 'function') {
+      throw new Error('Excepted the dequeue option to be a function.')
     }
 
-    return config
+    return options
   }
 
   return {
