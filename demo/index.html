@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="application/javascript" src="../index.js"></script>
+    <script>
+        var queue = [];
+        var enqueue = [].unshift.bind(queue);
+        var dequeue = [].pop.bind(queue);
+
+        var lazilyEnqueue = lazyEnqueue(enqueue, {
+            delay: 4000,
+            limit: 3,
+            dequeue: dequeue
+        })
+    </script>
+</head>
+<body>
+
+</body>
+</html>

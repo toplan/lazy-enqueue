@@ -3,18 +3,10 @@
  * Created by toplan on 17/2/7.
  * @email toplan710@gmail.com
  *
- * @param {Object} options
  * @param {Function} enqueue
+ * @param {Object} options
  *
  * @return {Function} lazilyEnqueue
- *
- * @example
- *   var lazy = require('lazy-enqueue');
- *   var queue = [1, 2]; //your queue
- *   var enqueue = [].unshift.bind(queue);
- *   var lazilyEnqueue = lazy(enqueue)
- *   lazilyEnqueue('3');
- *   lazilyEnqueue('4');
  */
 ;(function (root, factory) {
   if (typeof exports === 'object' && typeof module === 'object') {
@@ -35,59 +27,74 @@
       if (typeof enqueue !== 'function') {
         throw new Error('Excepted the enqueue to be a function.')
       }
-      options = utils.normalizeConfig(options)
+      options = utils.normalizeOptions(options)
+      var latestTimer, running = false, buffer = [], enqueuedCount = 0
 
-      var buffer = [], enqueuing = {}, enqueuedCount = 0
-      var finalEnqueue = function (value) {
-        if (options.will.call(null, value) === false) {
-          return options.rejected.call(null, value, 'will hook')
+      var finalEnqueue = function (args) {
+        if (utils.invoke(options.will, args) === false) {
+          return utils.invoke(options.rejected, args)
         }
-        enqueue.call(null, value)
-        if (++enqueuedCount > options.limit) {
-          enqueuedCount--
-          options.dequeue.call(null)
-        }
-        options.did.call(null, value)
+        utils.invoke(enqueue, args)
+        dequeueWithTimes(++enqueuedCount - options.limit)
+        utils.invoke(options.did, args)
       }
 
-      return function (value) { //lazily enqueue
-        buffer.push([utils.createId(), value])
-        if (buffer.length > options.limit) {
-          buffer = options.limit ? buffer.slice(-options.limit) : []
-        }
-        var len = buffer.length, delay = 0, i = 0
-
-        for (i; i < len; i++) {
-          var id = buffer[i][0]
-          value = buffer[i][1]
-          if (enqueuing[id]) {
-            continue
+      var dequeueWithTimes = function (times) {
+        if (times > 0 && times < Infinity) {
+          while (times--) {
+            utils.invoke(options.dequeue)
+            enqueuedCount--
           }
-
-          var delayInc = utils.generateDelay(options.delay, value)
-          if (delayInc === Infinity) {
-            options.rejected.call(null, value, 'infinity delay')
-            continue
-          }
-          delay += delayInc
-
-          enqueuing[id] = true
-          setTimeout(function () {
-            var indexInBuffer = utils.findIndex(buffer, function (item) {
-              return item[0] === id
-            })
-            if (indexInBuffer === -1) {
-              return options.rejected.call(null, value, 'overflow')
-            }
-            buffer.splice(indexInBuffer, 1)
-            delete enqueuing[id]
-            try {
-              finalEnqueue(value)
-            } catch (e) {
-              throw e
-            }
-          }, delay)
         }
+      }
+
+      var delayEnqueue = function (args, delay, cb) {
+        var timer = setTimeout(function () {
+          clearTimeout(timer)
+          try {
+            finalEnqueue(args)
+            utils.invoke(cb)
+          } catch (e) {
+            throw e
+          }
+        }, delay)
+      }
+
+      var overflowBuffer = function () {
+        var overflowLen = buffer.length - options.limit
+        if (overflowLen <= 0) {
+          return
+        }
+        while (overflowLen--) {
+          utils.invoke(options.rejected, buffer.shift())
+        }
+      }
+
+      var consumeBuffer = function () {
+        var args = buffer.shift()
+        if (typeof args === 'undefined') {
+          return running = false
+        }
+        var delay = utils.generateDelay(options.delay, args)
+        delayEnqueue(args, delay, function () {
+          consumeBuffer()
+        })
+      }
+
+      return function () {
+        var args = Array.prototype.slice.call(arguments)
+        buffer.push(args)
+        var timer = latestTimer = setTimeout(function () {
+          clearTimeout(timer)
+          if (timer !== latestTimer) {
+            return
+          }
+          overflowBuffer()
+          if (!running) {
+            running = true
+            consumeBuffer()
+          }
+        }, 0)
       }
     }
   }
@@ -98,37 +105,21 @@
     return typeof number === 'number' && !isNaN(number)
   }
 
-  var createId = function () {
-    var id = 0
-    return function () {
-      return id++
+  var invoke = function (fn, args, content) {
+    if (typeof fn === 'function') {
+      return fn.apply(content || null, args || [])
     }
-  }()
-
-  var findIndex = function (array, condition) {
-    if (!array || !array.length || typeof condition !== 'function') {
-      return -1
-    }
-    var len = array.length
-    while (len--) {
-      var item = array[len]
-      if (condition.call(null, item)) {
-        return len
-      }
-    }
-
-    return -1
   }
 
-  var generateDelay = function (delay, value) {
+  var generateDelay = function (delay, args) {
     if (typeof delay === 'function') {
-      delay = delay.call(null, value)
+      delay = invoke(delay, args)
     }
 
     return isValidNumber(delay) ? delay : 0
   }
 
-  var normalizeConfig = function (options) {
+  var normalizeOptions = function (options) {
     if (!options || typeof options !== 'object') {
       options = {}
     }
@@ -138,7 +129,7 @@
     options.rejected = options.rejected || noop
     options.limit = isValidNumber(options.limit) ? options.limit : Infinity
     options.dequeue = options.dequeue || void 0
-    if (!isValidNumber(options.delay) || typeof options.delay !== 'function') {
+    if (!isValidNumber(options.delay) && typeof options.delay !== 'function') {
       throw new Error('Excepted the delay option to be a number or function.')
     }
     if (options.limit < 0) {
@@ -152,9 +143,8 @@
   }
 
   return {
-    createId: createId,
-    findIndex: findIndex,
+    invoke: invoke,
     generateDelay: generateDelay,
-    normalizeConfig: normalizeConfig
+    normalizeOptions: normalizeOptions
   }
 }())))
