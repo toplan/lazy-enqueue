@@ -30,12 +30,16 @@
       options = utils.normalizeOptions(options)
       var latestTimer, running = false, buffer = [], enqueuedCount = 0
 
-      var finalEnqueue = function (args) {
+      var syncEnqueue = function (args) {
         if (utils.invoke(options.will, args) === false) {
           return utils.invoke(options.rejected, args)
         }
-        utils.invoke(enqueue, args)
-        dequeueWithTimes(++enqueuedCount - options.limit)
+        try {
+          utils.invoke(enqueue, args)
+          dequeueWithTimes(++enqueuedCount - options.limit)
+        } catch (e) {
+          throw e
+        }
         utils.invoke(options.did, args)
       }
 
@@ -48,15 +52,11 @@
         }
       }
 
-      var delayEnqueue = function (args, delay, cb) {
+      var asyncEnqueue = function (args, delay, cb) {
         var timer = setTimeout(function () {
           clearTimeout(timer)
-          try {
-            finalEnqueue(args)
-            utils.invoke(cb)
-          } catch (e) {
-            throw e
-          }
+          syncEnqueue(args)
+          utils.invoke(cb)
         }, delay)
       }
 
@@ -76,7 +76,17 @@
           return running = false
         }
         var delay = utils.generateDelay(options.delay, args)
-        delayEnqueue(args, delay, function () {
+        if (typeof delay === 'number' && delay <= 0) {
+          syncEnqueue(args)
+          return consumeBuffer()
+        }
+        if (utils.isPromise(delay)) {
+          return delay.then(function () {
+            syncEnqueue(args)
+            consumeBuffer()
+          })
+        }
+        asyncEnqueue(args, delay, function () {
           consumeBuffer()
         })
       }
@@ -111,12 +121,16 @@
     }
   }
 
+  var isPromise = function (target) {
+    return target && typeof target.then === 'function'
+  }
+
   var generateDelay = function (delay, args) {
     if (typeof delay === 'function') {
       delay = invoke(delay, args)
     }
 
-    return isValidNumber(delay) ? delay : 0
+    return (isValidNumber(delay) || isPromise(delay)) ? delay : 0
   }
 
   var normalizeOptions = function (options) {
@@ -144,6 +158,7 @@
 
   return {
     invoke: invoke,
+    isPromise: isPromise,
     generateDelay: generateDelay,
     normalizeOptions: normalizeOptions
   }
