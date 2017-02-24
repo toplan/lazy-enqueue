@@ -10,10 +10,27 @@
         var dequeue = [].pop.bind(queue);
 
         var lazilyEnqueue = lazyEnqueue(enqueue, {
-            delay: 4000,
+            delay: 1000,
             limit: 3,
-            dequeue: dequeue
+            dequeue: dequeue,
+            will: function (value) {
+                console.group()
+                console.timeEnd('time')
+                console.log('will enqueue:', value)
+            },
+            rejected: function (value) {
+                console.warn('rejected enqueue:', value)
+            },
+            did: function () {
+                console.log('queue:', queue);
+                console.groupEnd()
+            }
         })
+        console.time('time')
+        lazilyEnqueue(0);lazilyEnqueue(1);
+        setTimeout(function () {
+            lazilyEnqueue(2);lazilyEnqueue(3);lazilyEnqueue(4);lazilyEnqueue(5);
+        }, 2000)
     </script>
 </head>
 <body>

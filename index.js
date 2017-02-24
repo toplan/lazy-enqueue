@@ -70,24 +70,24 @@
         }
       }
 
-      var consumeBuffer = function () {
+      var next = function () {
         var args = buffer.shift()
         if (typeof args === 'undefined') {
           return running = false
         }
         var delay = utils.generateDelay(options.delay, args)
-        if (typeof delay === 'number' && delay <= 0) {
+        if (typeof delay === 'number' && delay < 0) {
           syncEnqueue(args)
-          return consumeBuffer()
+          return next()
         }
         if (utils.isPromise(delay)) {
           return delay.then(function () {
             syncEnqueue(args)
-            consumeBuffer()
+            next()
           })
         }
         asyncEnqueue(args, delay, function () {
-          consumeBuffer()
+          next()
         })
       }
 
@@ -102,7 +102,7 @@
           overflowBuffer()
           if (!running) {
             running = true
-            consumeBuffer()
+            next()
           }
         }, 0)
       }
