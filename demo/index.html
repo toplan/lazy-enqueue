@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>The demo of lazy-enqueue</title>
     <script type="application/javascript" src="../index.js"></script>
     <script>
         var queue = [];
@@ -13,16 +13,16 @@
             delay: 1000,
             limit: 3,
             dequeue: dequeue,
-            will: function (value) {
+            will: function (data) {
                 console.group()
                 console.timeEnd('time')
-                console.log('will enqueue:', value)
+                console.log('[will] data:', data)
             },
-            rejected: function (value) {
-                console.warn('rejected enqueue:', value)
+            failure: function (err, data) {
+                console.warn('[failure] data :', data, ', and the reason is', err)
             },
-            did: function () {
-                console.log('queue:', queue);
+            success: function (value, data) {
+                console.log('[success] queue:', queue);
                 console.groupEnd()
             }
         })
@@ -31,6 +31,40 @@
         setTimeout(function () {
             lazilyEnqueue(2);lazilyEnqueue(3);lazilyEnqueue(4);lazilyEnqueue(5);
         }, 2000)
+        setTimeout(function () {
+            lazilyEnqueue(6).delay(500).hook('will', function (data) {
+                console.info('[will] will delay 500')
+                return data + '.1'
+            }).done(function (value) {
+                console.info('[success] return:', value)
+            }, function (err) {
+                console.warn('[failure] reason is', err)
+            });
+
+            lazilyEnqueue(7).delay(2000).hook('success', function (value, data) {
+                console.info('[success] had delay 2000')
+            }).hook('will', function (data) {
+                return 'origin data:' + data
+            }).will(function (data) {
+            });
+
+            var promise = new Promise(function (resolve) {
+                console.log('---create promise--')
+                setTimeout(function () {
+                    resolve('promise')
+                }, 5000)
+            })
+            lazilyEnqueue(8).delay(promise);
+        }, 3500)
+        setTimeout(function () {
+            lazilyEnqueue(9).will(function (data) {
+                throw new Error('I refused it, ' + data)
+            }).done(function (value, data) {
+                console.info(value, data)
+            }, function (e) {
+                console.warn(e)
+            });
+        }, 10000)
     </script>
 </head>
 <body>
