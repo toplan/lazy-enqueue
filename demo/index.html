@@ -13,15 +13,15 @@
             delay: 1000,
             limit: 3,
             dequeue: dequeue,
-            will: function (value) {
+            will: function (data) {
                 console.group()
                 console.timeEnd('time')
-                console.log('will enqueue:', value)
+                console.log('will enqueue:', data)
             },
-            rejected: function (value) {
-                console.warn('rejected enqueue:', value)
+            failed: function (err, data) {
+                console.warn('failed enqueue:', data, ', and the reason is', err)
             },
-            did: function () {
+            did: function (value, data) {
                 console.log('queue:', queue);
                 console.groupEnd()
             }
@@ -31,6 +31,19 @@
         setTimeout(function () {
             lazilyEnqueue(2);lazilyEnqueue(3);lazilyEnqueue(4);lazilyEnqueue(5);
         }, 2000)
+        setTimeout(function () {
+            lazilyEnqueue(6).delay(500).hook('will', function (data) {
+                console.info('will hook, delay 500')
+                return '6.1'
+            });
+            lazilyEnqueue(7).delay(2000).hook('did', function (value, data) {
+                console.info('did hook, delay 2000')
+            }).hook('will', function (data) {
+                return 'origin data:' + data
+            }).hook('will', function (data) {
+            });
+            lazilyEnqueue(8);
+        }, 3500)
     </script>
 </head>
 <body>

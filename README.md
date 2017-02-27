@@ -1,5 +1,5 @@
 # Intro
-A library to make your enqueue function lazily.
+A lightweight and no dependencies library to make your enqueue function lazily.
 
 # Install
 ```
@@ -18,17 +18,17 @@ const lazilyEnqueue = lazy(enqueue, {
     delay: 1000,
     limit: 3,
     dequeue: dequeue,
-    will: value => {
+    will: data => {
         console.group()
         console.timeEnd('time')
-        console.log('will enqueue:', value)
+        console.log('will enqueue:', data)
     },
-    rejected: value => {
-        console.warn('rejected enqueue:', value)
-    },
-    did: value => {
+    did: (value, data) => {
         console.log('queue:', queue)
         console.groupEnd()
+    },
+    failed: (err, data) => {
+        console.warn('failed enqueue:', data, ', and the reason is', err)
     }
 })
 
@@ -45,35 +45,47 @@ setTimeout(() => {
 import lazy from 'lazy-enqueue'
 ```
 
-## lazy([options], enqueue)
+## lazy(enqueue, [options])
 
 Create a lazily high order function of the original enqueue function.
 
 #### Arguments
-1. `[options]` (Object)
-
-- delay (Number|Promise|Function)
-  The value can be a number, promise or function witch return a number or promise, default value is `0`.
-  If the value is a negative number, the data will skip delay and enqueue immediately after the previous.
-
-- will (Function)
-  A global hook, will be invoke before enqueue with the arguments same to enqueue function.
-
-- did (Function)
-  A global hook, will be invoke after enqueue with the arguments same to enqueue function.
-
-- rejected (Function)
-  A global hook, will be invoke after reject enqueue with the arguments same to enqueue function.
-
-- limit (Number)
-  The number of limit enqueue, default value is `Infinity`.
-
-- dequeue (Function)
-  A dequeue function of the original queue, this option is required if the limit option is not equal to `Infinity`.
-
-2. `enqueue` (Function)
+1. `enqueue` (Function)
 The original enqueue function.
 
-#### Returns
+2. `[options]` (Object)
 
+- delay (Number|Promise|Function): global delay value
+
+- will (Function): global hook
+
+- did (Function): global hook
+
+- failed (Function): global hook
+
+- limit (Number): The number of limit enqueue, default value is `Infinity`.
+
+- dequeue (Function): A dequeue function of the original queue, this option is required if the limit option is lower than `Infinity`.
+
+#### Returns
 `(lazilyEnqueue)`: A lazily high order function.
+
+```javascript
+const {delay, hook} = lazilyEnqueue(data)
+```
+## delay(value)
+This value will override the global delay value.
+
+#### Arguments
+`value` (Number|Promise|Function)
+
+## hook(name, fn)
+
+#### Arguments
+1. `name` (String)
+There are only three optional value: 'will', 'did', 'failed'.
+
+2. `fn` (Function)
+The hook handler.
+If the name is `did`, the first argument is the return value of the original enqueue function.
+If the name is `failed`, the first argument is the error information.
