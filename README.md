@@ -90,7 +90,7 @@ Add private hooks for the current enqueue action, and these hooks will be called
 #### Arguments
 1. `name` (String)
 
-    The hook name, there are only three optional value: 'will', 'success', 'failure'.
+    The hook name, there are only three optional value: `will`, `success`, `failure`.
 
 2. `fn` (Function)
 
@@ -103,10 +103,11 @@ Add private hooks for the current enqueue action, and these hooks will be called
 ```javascript
 const {will} = lazilyEnqueue(data)
 ```
-alias: `hook('will', fn)`
+same to `hook('will', fn)`
 
 ## done(onSuccess, onFailure)
 ```javascript
 const {done} = lazilyEnqueue(data)
 ```
-alias: `hook('success', onSuccess).hook('failure', onFailure)`
+same to `hook('success', onSuccess).hook('failure', onFailure)`
+
