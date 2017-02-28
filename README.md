@@ -58,9 +58,9 @@ Create a lazily high order function of the original enqueue function.
 
     - will (Function): A global hook, called before enqueue.
 
-    - success (Function): A global hook, called after successful enqueue.
+    - success (Function): A global hook, called when enqueue success.
 
-    - failure (Function): A global hook, called after the failure of enqueue.
+    - failure (Function): A global hook, called when enqueue failure.
 
     - limit (Number): The number of limit enqueue, default value is `Infinity`.
 
@@ -73,7 +73,10 @@ Create a lazily high order function of the original enqueue function.
 ```javascript
 const {delay} = lazilyEnqueue(data)
 ```
-The method can override the global delay value.
+Set the private delay value for the current enqueue action, in other words, override the global delay value.
+
+> All of the functions(api) return by `(lazilyEnqueue)` support chain calls, like this:
+> `delay(100).hook('will', fn).hook('success', fn)`
 
 #### Arguments
 `value` (Number|Promise|Function)
@@ -82,18 +85,19 @@ The method can override the global delay value.
 ```javascript
 const {hook} = lazilyEnqueue(data)
 ```
-Add private hooks, which will invoke before the global hooks.
+Add private hooks for the current enqueue action, and these hooks will be called before the global hooks.
 
 #### Arguments
 1. `name` (String)
 
-    There are only three optional value: 'will', 'success', 'failure'.
+    The hook name, there are only three optional value: 'will', 'success', 'failure'.
 
 2. `fn` (Function)
 
     The hook handler.
-    If the name is `success`, the first argument is the return value of the original enqueue function.
-    If the name is `failure`, the first argument is the error information.
+    If the hook name is `will`, the parameter of this function is the return value of the previous `will` hook.
+    If the hook name is `success`, the first parameter of this function is the return value of the original enqueue function.
+    If the hook name is `failure`, the first parameter of this function is the error information.
 
 ## will(fn)
 ```javascript
