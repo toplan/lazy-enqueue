@@ -1,6 +1,6 @@
 {
   "name": "lazy-enqueue",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "A library to make your enqueue function lazily",
   "main": "index.js",
   "scripts": {

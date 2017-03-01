@@ -81,6 +81,13 @@ Set the private delay value for the current enqueue action, in other words, over
 #### Arguments
 `value` (Number|Promise|Function)
 
+If this value is a promise,
+the return value(if has) will override the original data, witch be passed to the `(lazilyEnqueue)` function.
+
+If this value is a function,
+it will be called with specified parameters, witch passed to the `(lazilyEnqueue)` function,
+and the return value should be a number or promise.
+
 ## hook(name, fn)
 ```javascript
 const {hook} = lazilyEnqueue(data)
@@ -95,9 +102,17 @@ Add private hooks for the current enqueue action, and these hooks will be called
 2. `fn` (Function)
 
     The hook handler.
-    If the hook name is `will`, the parameter of this function is the return value of the previous `will` hook.
-    If the hook name is `success`, the first parameter of this function is the return value of the original enqueue function.
-    If the hook name is `failure`, the first parameter of this function is the error information.
+
+    If the hook name is `will`,
+    the parameters of this hook function is same to the parameters passed to the `(lazilyEnqueue)` function,
+    and the return value(if has) will be passed to the next `will` hook as its parameter.
+    In the end, the latest return value will be pushed to the queue (override the original data).
+
+    If the hook name is `success`, the first parameter of this hook function is the return value of the original enqueue function,
+    and the remaining parameters is same to the parameters passed to the `(lazilyEnqueue)` function.
+
+    If the hook name is `failure`, the first parameter of this hook function is the error information.
+    and the remaining parameters is same to the parameters passed to the `(lazilyEnqueue)` function.
 
 ## will(fn)
 ```javascript

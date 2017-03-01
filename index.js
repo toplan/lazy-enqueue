@@ -27,21 +27,17 @@
     var success = function (data, value) {
       data.value = value
       data.status = SUCCESS
-      try {
+      utils.tryDo(function () {
         utils.invoke(data.successHooks, [value].concat(data.args))
-      } catch (e) {
-        utils.warn(e)
-      }
+      })
     }
 
     var failure = function (data, error) {
       data.error = error
       data.status = FAILED
-      try {
+      utils.tryDo(function () {
         utils.invoke(data.failureHooks, [error].concat(data.args))
-      } catch (e) {
-        utils.warn(e)
-      }
+      })
     }
 
     var createLazyReturns = function (data) {
@@ -60,11 +56,15 @@
             return returns
           }
           if (data.status === SUCCESS && name === SUCCESS_HOOK) {
-            utils.invoke(fn, [data.value].concat(data.args))
+            utils.tryDo(function () {
+              utils.invoke(fn, [data.value].concat(data.args))
+            })
             return returns
           }
           if (data.status === FAILED && name === FAILURE_HOOK) {
-            utils.invoke(fn, [data.error].concat(data.args))
+            utils.tryDo(function () {
+              utils.invoke(fn, [data.error].concat(data.args))
+            })
             return returns
           }
           name = name + 'Hooks'
@@ -142,7 +142,12 @@
         if (typeof data === 'undefined') {
           return running = false
         }
-        var delay = utils.computeDelay(data.delay, data.args, 0)
+        try {
+          var delay = utils.computeDelay(data.delay, data.args, 0)
+        } catch (e) {
+          failure(data, e)
+          return next()
+        }
         if (utils.isPromise(delay)) {
           return delay.then(function (res) {
             if (typeof res !== 'undefined') {
@@ -189,7 +194,7 @@
 }(function () {
   var warn = function (e) {
     if (console) {
-      return console.warn(e)
+      return console.error ? console.error(e) : console.log(e)
     }
     throw e
   }
@@ -211,6 +216,14 @@
       delay = invoke(delay, args)
     }
     return isValidDelay(delay) ? delay : $default
+  }
+
+  var tryDo = function (fn) {
+    try {
+      invoke(fn)
+    } catch (e) {
+      warn(e)
+    }
   }
 
   var invoke = function (fn, args, isCrossArgs) {
@@ -244,6 +257,7 @@
 
   return {
     warn: warn,
+    tryDo: tryDo,
     invoke: invoke,
     isPromise: isPromise,
     computeDelay: computeDelay,
