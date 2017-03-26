@@ -102,11 +102,9 @@
         } catch (e) {
           return failure(data, e)
         }
-        try {
+        utils.tryDo(function () {
           dequeueWithTimes(++enqueuedCount - options.limit)
-        } catch (e) {
-          utils.warn(e)
-        }
+        })
         success(data, ret)
       }
 
@@ -256,7 +254,6 @@
   }
 
   return {
-    warn: warn,
     tryDo: tryDo,
     invoke: invoke,
     isPromise: isPromise,

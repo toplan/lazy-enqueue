@@ -45,7 +45,7 @@ setTimeout(() => {
 ```javascript
 import lazy from 'lazy-enqueue'
 ```
-Create a lazily high order function of the original enqueue function.
+Create a lazily higher order function of the original enqueue function.
 
 #### Arguments
 1. `enqueue` (Function)
@@ -67,7 +67,7 @@ Create a lazily high order function of the original enqueue function.
     - dequeue (Function): A dequeue function of the original queue, this option is required if the limit option is lower than `Infinity`.
 
 #### Returns
-`(lazilyEnqueue)`: A lazily high order function.
+`(lazilyEnqueue)`: A lazily higher order function.
 
 ## delay(value)
 ```javascript
@@ -120,7 +120,7 @@ const {will} = lazilyEnqueue(data)
 ```
 same to `hook('will', fn)`
 
-## done(onSuccess, onFailure)
+## done(onSuccess, [onFailure])
 ```javascript
 const {done} = lazilyEnqueue(data)
 ```
