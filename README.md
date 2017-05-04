@@ -13,22 +13,21 @@ import lazy from 'lazy-enqueue'
 
 const queue = []
 const enqueue = queue.unshift.bind(queue)
-const dequeue = queue.pop.bind(queue)
 const lazilyEnqueue = lazy(enqueue, {
     delay: 1000,
-    limit: 3,
-    dequeue: dequeue,
+    bufferSize: 3,
     will: data => {
         console.group()
         console.timeEnd('time')
         console.log('[will] data:', data)
     },
     success: (value, data) => {
+        if (value > 3) queue.pop()
         console.log('[success] queue:', queue)
         console.groupEnd()
     },
     failure: (err, data) => {
-        console.warn('[failure] data:', data, ', and the reason is', err)
+        console.warn('[failure] data:', data, err)
     }
 })
 
@@ -54,17 +53,15 @@ Create a lazily higher order function of the original enqueue function.
 
 2. `[options]` (Object)
 
-    - delay (Number|Promise|Function): global delay value.
+    - delay (Number|Promise|Function): The global delay value.
 
-    - will (Function): A global hook, called before enqueue.
+    - will (Function): The global hook, called before the enqueue action.
 
-    - success (Function): A global hook, called when enqueue success.
+    - success (Function): The global hook, called after successfully enqueue.
 
-    - failure (Function): A global hook, called when enqueue failure.
+    - failure (Function): The global hook, called if failed with any reason.
 
-    - limit (Number): The number of limit enqueue, default value is `Infinity`.
-
-    - dequeue (Function): A dequeue function of the original queue, this option is required if the limit option is lower than `Infinity`.
+    - bufferSize (Number): The size of buffer. Default `Infinity`.
 
 #### Returns
 `(lazilyEnqueue)`: A lazily higher order function.
@@ -73,7 +70,7 @@ Create a lazily higher order function of the original enqueue function.
 ```javascript
 const {delay} = lazilyEnqueue(data)
 ```
-Set the private delay value for the current enqueue action, in other words, override the global delay value.
+Set private delay value for the current enqueue action. In other words, override the global delay value.
 
 > All of the functions(api) return by `(lazilyEnqueue)` support chain calls, like this:
 > `delay(100).hook('will', fn).hook('success', fn)`
@@ -92,7 +89,7 @@ and the return value should be a number or promise.
 ```javascript
 const {hook} = lazilyEnqueue(data)
 ```
-Add private hooks for the current enqueue action, and these hooks will be called before the global hooks.
+Add private hooks for the current enqueue action. These private hooks called before the global hooks.
 
 #### Arguments
 1. `name` (String)
@@ -118,11 +115,11 @@ Add private hooks for the current enqueue action, and these hooks will be called
 ```javascript
 const {will} = lazilyEnqueue(data)
 ```
-same to `hook('will', fn)`
+It's same to `hook('will', fn)`.
 
 ## done(onSuccess, [onFailure])
 ```javascript
 const {done} = lazilyEnqueue(data)
 ```
-same to `hook('success', onSuccess).hook('failure', onFailure)`
+It's same to `hook('success', onSuccess).hook('failure', onFailure)`.
 

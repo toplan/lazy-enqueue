@@ -7,21 +7,20 @@
     <script>
         var queue = [];
         var enqueue = [].unshift.bind(queue);
-        var dequeue = [].pop.bind(queue);
 
         var lazilyEnqueue = lazyEnqueue(enqueue, {
             delay: 1000,
-            limit: 3,
-            dequeue: dequeue,
+            bufferSize: 3,
             will: function (data) {
                 console.group()
                 console.timeEnd('time')
                 console.log('[will] data:', data)
             },
             failure: function (err, data) {
-                console.warn('[failure] data :', data, ', and the reason is', err)
+                console.warn('[failure] data:', data, err)
             },
-            success: function (value, data) {
+            success: function (length, data) {
+                if (length > 3) queue.pop()
                 console.log('[success] queue:', queue);
                 console.groupEnd()
             }

@@ -92,7 +92,7 @@
         throw new Error('Excepted the enqueue to be a function.')
       }
       options = utils.normalizeOptions(options)
-      var latestTimer, running = false, buffer = [], enqueuedCount = 0
+      var latestTimer, running = false, buffer = []
 
       var syncEnqueue = function (data) {
         var ret, args
@@ -102,19 +102,7 @@
         } catch (e) {
           return failure(data, e)
         }
-        utils.tryDo(function () {
-          dequeueWithTimes(++enqueuedCount - options.limit)
-        })
         success(data, ret)
-      }
-
-      var dequeueWithTimes = function (times) {
-        if (times > 0 && times < Infinity) {
-          while (times--) {
-            utils.invoke(options.dequeue)
-            enqueuedCount--
-          }
-        }
       }
 
       var asyncEnqueue = function (data, delay, cb) {
@@ -126,7 +114,7 @@
       }
 
       var overflowBuffer = function () {
-        var overflowLen = buffer.length - options.limit
+        var overflowLen = buffer.length - options.bufferSize
         if (overflowLen <= 0) {
           return
         }
@@ -242,13 +230,9 @@
 
   var normalizeOptions = function (options) {
     options = options || {}
-    options.limit = isValidNumber(options.limit) ? options.limit : Infinity
-    options.dequeue = options.dequeue || void 0
-    if (options.limit < 0) {
-      throw new Error('Excepted the limit option greater than or equal to zero.')
-    }
-    if (options.limit < Infinity && typeof options.dequeue !== 'function') {
-      throw new Error('Excepted the dequeue option to be a function.')
+    options.bufferSize = isValidNumber(options.bufferSize) ? options.bufferSize : Infinity
+    if (options.bufferSize < 0) {
+      throw new Error('Excepted the option `bufferSize` greater than or equal to zero.')
     }
     return options
   }
